@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema<UserDocument>(
     password: {
       type: String,
       required: true,
+      select: false
     },
   },
   { timestamps: true },

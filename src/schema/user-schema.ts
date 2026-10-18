@@ -31,3 +31,26 @@ export type createUserInput = Omit<
   z.infer<typeof createUserSchema>["body"],
   "passwordConfirmation"
 >;
+
+export const updateUserSchema = z.object({
+  body: z
+    .strictObject({
+      email: z
+        .email({
+          pattern:
+            /^(?!\.)(?!.*\.\.)([a-z0-9_'+\-\.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9\-]*\.)+[a-z]{2,}$/i,
+          error: "Invalid email address",
+        })
+        .toLowerCase(),
+      name: z
+        .string({ error: "Name must be a string" })
+        .trim()
+        .min(1, "Name cannot be empty"),
+    })
+    .partial()
+    .refine((data) => Object.keys(data).length > 0, {
+      message: "Provide at least one field to update",
+    }),
+});
+
+export type UpdateUserInput = z.infer<typeof updateUserSchema>["body"];
