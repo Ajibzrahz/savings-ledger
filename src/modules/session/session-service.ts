@@ -1,10 +1,9 @@
 import { QueryFilter, UpdateQuery } from "mongoose";
-import sessionModel, { sessionDocument } from "../models/session-model";
-import { verifyJwt, signJwt } from "../utils/jwt-utils";
+import sessionModel, { sessionDocument } from "./session-model";
+import { verifyJwt, signJwt } from "../../utils/jwt-utils";
 import { get, omit } from "lodash";
-import { decode } from "node:punycode";
-import userModel from "../models/user-model";
-import env from "../config/env";
+import userModel from "../user/user-model";
+import env from "../../config/env";
 
 export async function createUserSession(userId: string, userAgent: string) {
   const session = await sessionModel.create({ user: userId, userAgent });

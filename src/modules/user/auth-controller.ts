@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
-import * as userService from "../service/auth-service";
+import * as userService from "./auth-service";
 import { omit } from "lodash";
-import { createUserInput } from "../schema/user-schema";
-import { validatePassword } from "../service/auth-service";
+import { createUserInput } from "../user/user-schema";
+import { validatePassword } from "./auth-service";
 import { StatusCodes } from "http-status-codes";
-import { createUserSession, updateSession } from "../service/session-service";
-import { signJwt } from "../utils/jwt-utils";
-import env from "../config/env";
+import { createUserSession, updateSession } from "../session/session-service";
+import { signJwt } from "../../utils/jwt-utils";
+import env from "../../config/env";
 
 export const createUserHandler = async (
   req: Request<{}, {}, createUserInput>,

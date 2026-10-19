@@ -1,14 +1,14 @@
 import { Router } from "express";
-import validate from "../middleware/validate-resource";
-import { createUserSchema } from "../schema/user-schema";
+import validate from "../../middleware/validate-resource";
+import { createUserSchema } from "../user/user-schema";
 import {
   createUserHandler,
   loginHandler,
   logoutHandler,
-} from "../controller/auth-controller";
-import { createSessionSchema } from "../schema/session-schema";
-import requireUser from "../middleware/require-user";
-import deserializeUser from "../middleware/deserializeUser";
+} from "./auth-controller";
+import { createSessionSchema } from "../session/session-schema";
+import requireUser from "../../middleware/require-user";
+import deserializeUser from "../../middleware/deserializeUser";
 
 const router = Router();
 

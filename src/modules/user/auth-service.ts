@@ -1,4 +1,4 @@
-import userModel, { UserDocument } from "../models/user-model";
+import userModel, { UserDocument } from "../user/user-model";
 
 export async function createUser(
   input: Pick<UserDocument, "email" | "name" | "password">,

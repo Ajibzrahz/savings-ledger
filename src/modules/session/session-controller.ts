@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { findSession, updateSession } from "../service/session-service";
+import { findSession, updateSession } from "./session-service";
 import { StatusCodes } from "http-status-codes";
 
 export const getUserSessionHandler = async (req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { CreateGroupInput, UpdateGroupInput } from "../schema/group-schema";
-import * as groupService from "../service/group-service";
+import { CreateGroupInput, UpdateGroupInput } from "./group-schema";
+import * as groupService from "./group-service";
 import { StatusCodes } from "http-status-codes";
 
 export const createGroupHandler = async (

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import env from "../config/env";
 import { verifyJwt } from "../utils/jwt-utils";
-import { reIssueAccessToken } from "../service/session-service";
+import { reIssueAccessToken } from "../modules/session/session-service";
 
 const deserializeUser = async (
   req: Request,

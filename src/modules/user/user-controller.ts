@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as userService from "../service/user-service";
+import * as userService from "./user-service";
 import { StatusCodes } from "http-status-codes";
 
 export const getUserHandler = async (req: Request, res: Response) => {
