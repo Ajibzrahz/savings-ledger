@@ -13,7 +13,7 @@ export async function validatePassword({
   email: string;
   password: string;
 }) {
-    const user = await userModel.findOne({email})
+    const user = await userModel.findOne({email}).select("+password")
 
     if (!user) {
         return false

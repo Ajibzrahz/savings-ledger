@@ -30,21 +30,30 @@ export async function reIssueAccessToken({
 }) {
   const { decoded } = verifyJwt(refreshToken, env.refreshTokenSecret);
 
-  if (!decoded || get(decoded, "session")) return false;
+  if (!decoded) return false;
 
-  const session = await sessionModel.findById(get(decode, "session"));
+  const sessionId = get(decoded, "session");
 
-  if (!session || !session.valid === false) return false;
+  if (!sessionId) return false;
 
-  const user = await userModel.findOne({ _id: session.user });
+  const session = await sessionModel.findById(sessionId);
+
+  if (!session || session.valid === false) return false;
+
+  const user = await userModel.findById(session.user);
 
   if (!user) return false;
 
   const accessToken = signJwt(
-    { ...omit(user.toJSON(), ["password"]), session: session._id },
+    {
+      ...omit(user.toJSON(), ["password"]),
+      session: session._id,
+    },
     env.accessTokenSecret,
     {
       expiresIn: env.accessTokenTtl,
     },
   );
+
+  return accessToken;
 }

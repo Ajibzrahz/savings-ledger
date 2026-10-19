@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import env from "../config/env";
 
 export const signJwt = (
   object: Object,
@@ -20,10 +19,11 @@ export const verifyJwt = (token: string, secret: string) => {
       expired: false,
       decoded,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const expired = error instanceof jwt.TokenExpiredError;
     return {
       valid: false,
-      expired: error.message === "jwt expired",
+      expired,
       decoded: null,
     };
   }

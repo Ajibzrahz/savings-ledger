@@ -22,15 +22,18 @@ const deserializeUser = async (
     const newAccessToken = await reIssueAccessToken({ refreshToken });
 
     if (newAccessToken) {
-      res.cookie("accessToken", newAccessToken, {
-        maxAge: env.accessTokenTtl * 1000,
-        httpOnly: true,
-        secure: env.nodeEnv === "production",
-        sameSite: "strict",
-      });
-
       const { decoded } = verifyJwt(newAccessToken, env.accessTokenSecret);
-      res.locals.user = decoded;
+
+      if (decoded) {
+        res.cookie("accessToken", newAccessToken, {
+          maxAge: env.accessTokenTtl * 1000,
+          httpOnly: true,
+          secure: env.nodeEnv === "production",
+          sameSite: "strict",
+        });
+
+        res.locals.user = decoded;
+      }
     }
   }
 
