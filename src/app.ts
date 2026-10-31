@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 
-import routes from "./route/index.js";
+import routes from "./common/route/index.js";
 import errorHandler from "./middleware/error-handler.js";
 import cookieParser from "cookie-parser";
 
@@ -11,19 +11,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser())
+app.use(cookieParser());
+
+//health check
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok", uptime: process.uptime() });
+});
 
 // Routes
 app.use("/api/v1", routes);
 
 app.use(errorHandler);
-
-// Health check
-app.get("/", (_req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "API is running",
-  });
-});
 
 export default app;

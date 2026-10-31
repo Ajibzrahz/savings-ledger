@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
-import logger from "../utils/logger";
+import logger from "../common/utils/logger";
 
 // Your own errors: throw new AppError(404, "Group not found")
 export class AppError extends Error {
