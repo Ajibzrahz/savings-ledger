@@ -14,38 +14,41 @@ export interface GroupDocument extends Document {
   organizer: Types.ObjectId;
   startDate?: Date;
   createdAt: Date;
-  updateAt: Date;
+  updatedAt: Date;
 }
 
-const groupSchema = new Schema<GroupDocument>({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
+const groupSchema = new Schema<GroupDocument>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    contributionAmount: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    frequency: {
+      type: String,
+      enum: FREQUENCIES,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: STATUSES,
+      default: "draft",
+    },
+    organizer: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    startDate: { type: Date },
   },
-  contributionAmount: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
-  frequency: {
-    type: String,
-    enum: FREQUENCIES,
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: STATUSES,
-    default: "draft",
-  },
-  organizer: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-    index: true
-  },
-  startDate: { type: Date },
-});
+  { timestamps: true },
+);
 
-const Group = model<GroupDocument>("Group", groupSchema)
-export default Group
+const Group = model<GroupDocument>("Group", groupSchema);
+export default Group;

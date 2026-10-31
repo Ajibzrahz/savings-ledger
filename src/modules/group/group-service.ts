@@ -2,7 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import { AppError } from "../../middleware/error-handler";
 import Group from "./group-model";
 import { CreateGroupInput, UpdateGroupInput } from "./group-schema";
-import { assertValidId } from "../../utils/assert-valid-id";
+import { assertValidId } from "../../common/utils/assert-valid-id";
 
 export async function createGroup(input: CreateGroupInput, userId: string) {
   const group = await Group.create({ ...input, organizer: userId });

@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { objectId } from "../../utils/common";
+import { objectId } from "../../common/utils/common";
 
 export const addMemberSchema = z.object({
   params: z.object({ groupId: objectId }),

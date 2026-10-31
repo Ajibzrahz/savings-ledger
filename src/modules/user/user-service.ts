@@ -2,8 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import userModel from "./user-model";
 import { AppError } from "../../middleware/error-handler";
 import { UpdateUserInput } from "./user-schema";
-import { assertValidId } from "../../utils/assert-valid-id";
-
+import { assertValidId } from "../../common/utils/assert-valid-id";
 
 export async function getUser(id: string) {
   assertValidId(id);
@@ -26,4 +25,3 @@ export async function updateUser(id: string, update: UpdateUserInput) {
   }
   return user;
 }
-

@@ -1,6 +1,6 @@
 import * as z from "zod";
 import { FREQUENCIES, STATUSES } from "./group-model";
-import { objectId } from "../../utils/common";
+import { objectId } from "../../common/utils/common";
 
 export const createGroupSchema = z.object({
   body: z.strictObject({

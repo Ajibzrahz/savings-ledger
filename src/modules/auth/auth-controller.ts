@@ -5,7 +5,7 @@ import { createUserInput } from "../user/user-schema";
 import { validatePassword } from "./auth-service";
 import { StatusCodes } from "http-status-codes";
 import { createUserSession, updateSession } from "../session/session-service";
-import { signJwt } from "../../utils/jwt-utils";
+import { signJwt } from "../../common/utils/jwt-utils";
 import env from "../../config/env";
 
 export const createUserHandler = async (
