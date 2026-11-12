@@ -37,3 +37,7 @@ export const updateGroupSchema = z.object({
 });
 
 export type UpdateGroupInput = z.infer<typeof updateGroupSchema>;
+
+export const groupIdSchema = z.object({
+  params: z.object({groupId: objectId})
+})
