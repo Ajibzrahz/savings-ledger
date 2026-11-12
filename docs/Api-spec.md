@@ -32,7 +32,7 @@ Both are signed with different secrets. In production the cookies use the `secur
 
 Each login creates a `Session` record, and both tokens carry its id. If a request arrives with a missing or expired access token but a valid refresh token whose session is still valid, the API issues a new `accessToken` cookie and the request continues. Logging out marks the session invalid, so the refresh token stops working.
 
-A route that needs a login returns `403` when there is no valid session (see 10.7).
+A route that needs a login returns `403` when there is no valid session (see 10.2).
 
 ### 1.2 Access model
 
@@ -59,15 +59,15 @@ Request validation failures list each failing field:
 
 Common HTTP status codes:
 
-| Status | Meaning                                                              |
-| ------ | -------------------------------------------------------------------- |
+| Status | Meaning                                                               |
+| ------ | --------------------------------------------------------------------- |
 | 400    | Validation failure, malformed id, or an action the group state blocks |
-| 403    | Not logged in (see 10.7)                                             |
-| 404    | Resource not found, or not yours                                     |
-| 409    | Duplicate value or invalid state                                     |
-| 500    | Unexpected server error (generic message, details are logged)        |
+| 403    | Not logged in (see 10.2)                                              |
+| 404    | Resource not found, or not yours                                      |
+| 409    | Duplicate value or invalid state                                      |
+| 500    | Unexpected server error (generic message, details are logged)         |
 
-Two responses are not JSON today: a failed login (10.2) and an unauthenticated request (`Forbidden` text). Both are on the fix list.
+Two responses are not JSON today: a failed login (10.1) and an unauthenticated request (`Forbidden` text, 10.2).
 
 ### 1.4 Pagination
 
@@ -91,53 +91,55 @@ Two responses are not JSON today: a failed login (10.2) and an unauthenticated r
 
 ### 2.1 User
 
-| Field       | Type   | Description                                            |
-| ----------- | ------ | ------------------------------------------------------ |
-| `_id`       | String | User identifier                                        |
-| `name`      | String | User's name                                            |
-| `email`     | String | Unique email address                                   |
-| `createdAt` | Date   | Creation timestamp                                     |
-| `updatedAt` | Date   | Last update timestamp                                  |
+| Field       | Type   | Description           |
+| ----------- | ------ | --------------------- |
+| `_id`       | String | User identifier       |
+| `name`      | String | User's name           |
+| `email`     | String | Unique email address  |
+| `createdAt` | Date   | Creation timestamp    |
+| `updatedAt` | Date   | Last update timestamp |
 
-The password hash is never returned (see 10.1 for the login check that uses it).
+The password hash is never returned.
 
 ### 2.2 Session (internal)
 
 Not returned by any endpoint yet.
 
-| Field       | Type    | Description                  |
-| ----------- | ------- | ---------------------------- |
-| `user`      | String  | Owning user                  |
-| `valid`     | Boolean | `false` after logout         |
-| `userAgent` | String  | Client that logged in        |
+| Field       | Type    | Description           |
+| ----------- | ------- | --------------------- |
+| `user`      | String  | Owning user           |
+| `valid`     | Boolean | `false` after logout  |
+| `userAgent` | String  | Client that logged in |
 
 ### 2.3 Group
 
-| Field                | Type   | Description                                               |
-| -------------------- | ------ | --------------------------------------------------------- |
-| `_id`                | String | Group identifier                                          |
-| `name`               | String | Group name                                                |
-| `contributionAmount` | Number | Amount each member pays per cycle, in kobo                |
-| `frequency`          | String | `weekly` or `monthly`                                     |
-| `status`             | String | `draft`, `active` or `completed`                          |
-| `organizer`          | String | Identifier of the user who created the group              |
-| `startDate`          | Date   | Optional start date                                       |
-| `createdAt`          | Date   | Creation timestamp                                        |
-| `updatedAt`          | Date   | Last update timestamp                                     |
+| Field                | Type   | Description                                  |
+| -------------------- | ------ | -------------------------------------------- |
+| `_id`                | String | Group identifier                             |
+| `name`               | String | Group name                                   |
+| `contributionAmount` | Number | Amount each member pays per cycle, in kobo   |
+| `frequency`          | String | `weekly` or `monthly`                        |
+| `status`             | String | `draft`, `active` or `completed`             |
+| `organizer`          | String | Identifier of the user who created the group |
+| `startDate`          | Date   | Optional start date                          |
+| `createdAt`          | Date   | Creation timestamp                           |
+| `updatedAt`          | Date   | Last update timestamp                        |
 
 New groups are always `draft`. `status` and `organizer` are set by the server and cannot be sent by the client.
 
 ### 2.4 Member
 
-| Field            | Type   | Description                                              |
-| ---------------- | ------ | -------------------------------------------------------- |
-| `_id`            | String | Member identifier                                        |
-| `name`           | String | Member's name                                            |
-| `phone`          | String | Member's phone number                                    |
-| `group`          | String | Identifier of the group the member belongs to            |
-| `payoutPosition` | Number | Position in the payout order, assigned by the server     |
+| Field            | Type   | Description                                          |
+| ---------------- | ------ | ---------------------------------------------------- |
+| `_id`            | String | Member identifier                                    |
+| `name`           | String | Member's name                                        |
+| `phone`          | String | Member's phone number                                |
+| `group`          | String | Identifier of the group the member belongs to        |
+| `payoutPosition` | Number | Position in the payout order, assigned by the server |
+| `createdAt`      | Date   | Creation timestamp                                   |
+| `updatedAt`      | Date   | Last update timestamp                                |
 
-Members do not store timestamps yet (10.4).
+Within one group, no two members share a `payoutPosition`.
 
 ### 2.5 Cycle and Contribution
 
@@ -147,18 +149,17 @@ Members do not store timestamps yet (10.4).
 
 ## 3. Access rules
 
-| Resource | Action                | Rule in the code today                                         |
-| -------- | --------------------- | -------------------------------------------------------------- |
-| Users    | Register              | Anyone                                                         |
-| Users    | View by id            | Anyone, no login required (10.1)                               |
-| Users    | Update by id          | Any logged-in user, for any user id (10.1)                     |
-| Groups   | Create                | Logged in                                                      |
-| Groups   | View by id            | Any logged-in user, not limited to the organizer (10.1)        |
-| Groups   | Update                | Organizer only, while the group is `draft`                     |
-| Groups   | Delete                | Organizer only, while the group is `completed`                 |
-| Members  | Add                   | Organizer only, while the group is `draft`                     |
+| Resource | Action       | Rule                                                      |
+| -------- | ------------ | --------------------------------------------------------- |
+| Users    | Register     | Anyone                                                    |
+| Users    | View, update | The logged-in user, for their own account only (`/me`)    |
+| Groups   | Create       | Logged in                                                 |
+| Groups   | View         | The group's organizer only                                |
+| Groups   | Update       | The organizer only, while the group is `draft`            |
+| Groups   | Delete       | The organizer only, while the group is `draft`            |
+| Members  | Add          | The organizer only, while the group is `draft`            |
 
-A group that exists but belongs to someone else returns `404 Group not found` on update, delete and add-member, the same as a group that does not exist.
+A group that exists but belongs to someone else returns `404 Group not found`, the same as a group that does not exist.
 
 ---
 
@@ -185,14 +186,11 @@ Checks whether the application is running.
 
 ### Endpoint summary
 
-| Method | Endpoint               | Purpose             | Access        | Success | Status  |
-| ------ | ---------------------- | ------------------- | ------------- | ------- | ------- |
-| POST   | `/api/v1/auth`         | Register an account | Public        | 201     | Done    |
-| POST   | `/api/v1/auth/login`   | Log in              | Public        | 200     | Done    |
-| DELETE | `/api/v1/auth/logout`  | Log out             | Authenticated | 200     | Done    |
-| GET    | `/api/v1/auth/me`      | Current user        | Authenticated | 200     | Planned |
-
-Registration lives at the root of the auth router (`POST /api/v1/auth`). `POST /api/v1/auth/register` would be clearer (10.10).
+| Method | Endpoint              | Purpose             | Access        | Success | Status |
+| ------ | --------------------- | ------------------- | ------------- | ------- | ------ |
+| POST   | `/api/v1/auth`        | Register an account | Public        | 201     | Done   |
+| POST   | `/api/v1/auth/login`  | Log in              | Public        | 200     | Done   |
+| DELETE | `/api/v1/auth/logout` | Log out             | Authenticated | 200     | Done   |
 
 ### 5.1 POST `/api/v1/auth`
 
@@ -209,7 +207,7 @@ Creates a new account.
 }
 ```
 
-All four fields are required. The password must be at least six characters and match `passwordConfirmation`.
+All four fields are required. The password must be at least six characters and match `passwordConfirmation`. The email is trimmed and lowercased.
 
 **Success: 201**
 
@@ -232,7 +230,6 @@ All four fields are required. The password must be at least six characters and m
 - `400` validation failure
 - `409` email already registered (`Duplicate value entered for email, please choose another value`)
 
-**Known issue:** the schema lowercases and trims `email` and `name`, but the validation middleware does not store its parsed result, so the raw values are saved (10.3). `Ada@x.com` and `ada@x.com` are different accounts today.
 
 ### 5.2 POST `/api/v1/auth/login`
 
@@ -249,17 +246,12 @@ Authenticates a user.
 
 **Success: 200**
 
-Sets the `accessToken` and `refreshToken` cookies. The body is the plain text `Login successful`, not JSON.
+Sets the `accessToken` and `refreshToken` cookies. The body is currently the plain text `Login successful` (10.1).
 
 **Errors:**
 
 - `400` validation failure
-- `400` plain text `invalid email or password`, returned only when no account has that email
-
-**Known issues:**
-
-- **The password is not actually checked** (10.1). The comparison is not awaited, so any password works for an existing email.
-- A wrong email returns `400` as plain text. `401` with the standard JSON error is the intended behavior (10.2).
+- `400` plain text `invalid email or password` (10.1)
 
 ### 5.3 DELETE `/api/v1/auth/logout`
 
@@ -275,9 +267,9 @@ Logs out the authenticated user. The session is marked invalid and both cookies 
 
 **Errors:**
 
-- `403` not logged in (plain text `Forbidden`)
+- `403` not logged in (plain text `Forbidden`, 10.2)
 
-An access token that was already issued keeps working until it expires, at most 15 minutes (10.9).
+An access token that was already issued keeps working until it expires, at most 15 minutes (10.4).
 
 ---
 
@@ -285,28 +277,28 @@ An access token that was already issued keeps working until it expires, at most 
 
 ### Endpoint summary
 
-| Method | Endpoint             | Purpose             | Access (today)  | Success | Status  |
-| ------ | -------------------- | ------------------- | --------------- | ------- | ------- |
-| GET    | `/api/v1/users/:id`  | Retrieve a user     | Public          | 200     | Done    |
-| PATCH  | `/api/v1/users/:id`  | Update a user       | Authenticated   | 200     | Done    |
-| DELETE | `/api/v1/users/:id`  | Delete an account   | Authenticated   | 204     | Planned |
+| Method | Endpoint           | Purpose            | Access        | Success | Status  |
+| ------ | ------------------ | ------------------ | ------------- | ------- | ------- |
+| GET    | `/api/v1/users/me` | Retrieve my account | Authenticated | 200     | Done    |
+| PATCH  | `/api/v1/users/me` | Update my account  | Authenticated | 200     | Done    |
+| DELETE | `/api/v1/users/me` | Delete my account  | Authenticated | 204     | Planned |
 
-### 6.1 GET `/api/v1/users/:id`
+There is no `:id` in these paths. The account is always the logged-in user's own, taken from the session.
 
-Returns a user's public fields.
+### 6.1 GET `/api/v1/users/me`
+
+Returns the logged-in user's public fields.
 
 **Success: 200** → `{ "user": { ...User } }`
 
 **Errors:**
 
-- `400` malformed id (`Invalid user ID`)
+- `403` not logged in
 - `404` `user not found`
 
-**Known issue:** this route needs no login, so anyone can read any user's name and email by id (10.1).
+### 6.2 PATCH `/api/v1/users/me`
 
-### 6.2 PATCH `/api/v1/users/:id`
-
-Updates a user.
+Updates the logged-in user.
 
 **Request body** (one or both fields; any other field is rejected):
 
@@ -321,12 +313,14 @@ Updates a user.
 
 **Errors:**
 
-- `400` validation failure (empty body or an unknown field), or malformed id
+- `400` validation failure (empty body or an unknown field)
 - `403` not logged in
 - `404` `user not found`
 - `409` email already used
 
-**Known issue:** the route checks that you are logged in but not that `:id` is your own id, so any logged-in user can change another user's name or email (10.1).
+### 6.3 DELETE `/api/v1/users/me`
+
+**Planned.** The intended behavior is to mark the account deleted and invalidate all of its sessions, because a user owns financial records.
 
 ---
 
@@ -334,14 +328,14 @@ Updates a user.
 
 ### Endpoint summary
 
-| Method | Endpoint                       | Purpose             | Access        | Success | Status  |
-| ------ | ------------------------------ | ------------------- | ------------- | ------- | ------- |
-| POST   | `/api/v1/groups`               | Create a group      | Authenticated | 201     | Done    |
-| GET    | `/api/v1/groups/:id`           | Retrieve a group    | Authenticated | 200     | Done    |
-| PATCH  | `/api/v1/groups/:groupId`      | Update a group      | Organizer     | 200     | Done    |
-| DELETE | `/api/v1/groups/:groupId`      | Delete a group      | Organizer     | 204     | Done    |
-| GET    | `/api/v1/groups`               | List my groups      | Authenticated | 200     | Planned |
-| POST   | `/api/v1/groups/:groupId/start`| Start a group       | Organizer     | 200     | Planned |
+| Method | Endpoint                          | Purpose          | Access        | Success | Status  |
+| ------ | --------------------------------- | ---------------- | ------------- | ------- | ------- |
+| POST   | `/api/v1/groups`                  | Create a group   | Authenticated | 201     | Done    |
+| GET    | `/api/v1/groups/:groupId`         | Retrieve a group | Organizer     | 200     | Done    |
+| PATCH  | `/api/v1/groups/:groupId`         | Update a group   | Organizer     | 200     | Done    |
+| DELETE | `/api/v1/groups/:groupId`         | Delete a group   | Organizer     | 204     | Done    |
+| GET    | `/api/v1/groups`                  | List my groups   | Authenticated | 200     | Planned |
+| POST   | `/api/v1/groups/:groupId/start`   | Start a group    | Organizer     | 200     | Planned |
 | GET    | `/api/v1/groups/:groupId/summary` | Group summary    | Organizer     | 200     | Planned |
 
 ### 7.1 POST `/api/v1/groups`
@@ -386,9 +380,9 @@ Required: `name`, `contributionAmount` (positive integer, in kobo), `frequency` 
 - `400` validation failure
 - `403` not logged in
 
-### 7.2 GET `/api/v1/groups/:id`
+### 7.2 GET `/api/v1/groups/:groupId`
 
-Retrieves a group.
+Retrieves a group. Only the organizer can read it.
 
 **Success: 200** → `{ "group": { ...Group } }`
 
@@ -396,9 +390,8 @@ Retrieves a group.
 
 - `400` malformed id
 - `403` not logged in
-- `404` `group does not exist`
+- `404` `Group not found` (not found, or not yours)
 
-**Known issue:** any logged-in user can read any group by id; it is not limited to the organizer (10.1).
 
 ### 7.3 PATCH `/api/v1/groups/:groupId`
 
@@ -411,13 +404,13 @@ Updates a group. Only the organizer can do this, and only while the group is a `
 **Errors:**
 
 - `400` validation failure
-- `400` `Only draft group can be updated`
+- `400` `Only draft group can be updated` (`409` would fit better, 10.3)
 - `403` not logged in
 - `404` `Group not found` (not found, or not yours)
 
 ### 7.4 DELETE `/api/v1/groups/:groupId`
 
-Deletes a group. Only the organizer can do this, and only when the group is `completed`.
+Deletes a group and all of its members. Only the organizer can do this, and only while the group is a `draft`. Completed groups are kept as a record.
 
 **Success: 204**
 
@@ -425,11 +418,10 @@ No response body.
 
 **Errors:**
 
-- `400` `Only completed group can be deleted`
 - `403` not logged in
-- `404` `Group not found`
+- `404` `Group not found` (not found, or not yours)
+- `409` `Only draft groups can be deleted`
 
-A draft group cannot be deleted today, and deleting a group does not remove its members (10.5).
 
 ---
 
@@ -437,19 +429,17 @@ A draft group cannot be deleted today, and deleting a group does not remove its 
 
 ### Endpoint summary
 
-| Method | Endpoint                                 | Purpose              | Access    | Success | Status  |
-| ------ | ---------------------------------------- | -------------------- | --------- | ------- | ------- |
-| POST   | `/api/v1/members/:groupId`               | Add a member         | Organizer | 201     | Done    |
-| GET    | `/api/v1/groups/:groupId/members`        | List members         | Organizer | 200     | Planned |
-| PATCH  | `/api/v1/groups/:groupId/members/:memberId` | Update a member   | Organizer | 200     | Planned |
-| DELETE | `/api/v1/groups/:groupId/members/:memberId` | Remove a member   | Organizer | 204     | Planned |
-| PUT    | `/api/v1/groups/:groupId/members/order`  | Reorder members      | Organizer | 200     | Planned |
-
-Members are added at `POST /api/v1/members/:groupId`. Moving this under `/groups/:groupId/members` is on the list (10.10).
+| Method | Endpoint                                    | Purpose         | Access    | Success | Status  |
+| ------ | ------------------------------------------- | --------------- | --------- | ------- | ------- |
+| POST   | `/api/v1/members/:groupId`                  | Add a member    | Organizer | 201     | Done    |
+| GET    | `/api/v1/groups/:groupId/members`           | List members    | Organizer | 200     | Planned |
+| PATCH  | `/api/v1/groups/:groupId/members/:memberId` | Update a member | Organizer | 200     | Planned |
+| DELETE | `/api/v1/groups/:groupId/members/:memberId` | Remove a member | Organizer | 204     | Planned |
+| PUT    | `/api/v1/groups/:groupId/members/order`     | Reorder members | Organizer | 200     | Planned |
 
 ### 8.1 POST `/api/v1/members/:groupId`
 
-Adds a member to a draft group. The server puts the member at the end of the payout order.
+Adds a member to a draft group. The server puts the member at the end of the payout order (the highest existing position plus one).
 
 **Request body:**
 
@@ -473,6 +463,8 @@ The response is the member itself, with no wrapper:
   "phone": "08012345678",
   "group": "6710efa1a1b2c3d4e5f60010",
   "payoutPosition": 1,
+  "createdAt": "2026-11-08T09:30:00.000Z",
+  "updatedAt": "2026-11-08T09:30:00.000Z",
   "__v": 0
 }
 ```
@@ -483,6 +475,8 @@ The response is the member itself, with no wrapper:
 - `403` not logged in
 - `404` `Group not found` (not found, or not yours)
 - `409` `Members can't be added after the group starts`
+- `409` `Could not add the member, please try again` (two members were added at the same moment and the retries ran out)
+
 
 ---
 
@@ -492,69 +486,22 @@ The response is the member itself, with no wrapper:
 - **Services throw, one handler responds:** services throw `AppError`, and a single error handler turns errors into responses. Express 5 forwards rejected promises, so controllers need no try/catch.
 - **Strict request bodies:** group and member bodies use strict schemas, so a client cannot send `organizer` or `status`.
 - **Server-controlled fields:** the organizer comes from the login, and `status` and `payoutPosition` are set by the server.
+- **No ids for your own account:** user routes use `/me`, so there is no way to point at someone else's account.
 - **Cookie authentication with stored sessions:** tokens live in HTTP-only cookies, and a session record lets logout cut off the refresh path.
-- **Other people's groups look missing:** update, delete and add-member return `404` for a group that is not yours.
+- **Other people's groups look missing:** group routes return `404` for a group that is not yours, so ids cannot be probed.
+- **Ownership checks live in the service:** the group is looked up together with its organizer in one query, and conditions such as `status: "draft"` go in the same query so there is no gap between check and write.
+- **Unique payout positions are enforced by the database:** a unique index on `(group, payoutPosition)` is the real guarantee, and the service retries when two adds collide.
 - **Money as integer kobo:** avoids floating-point errors and matches what a payment provider uses.
 - **Members are separate from users:** a member is a record in a group, not an account, so member accounts can be added later without reshaping the data.
-- **Ownership checks live in the service:** the group is looked up together with its organizer in one query.
+- **Completed groups are kept:** only drafts can be deleted, because a completed group is the record of who paid whom.
 
 ---
 
 ## 10. Known issues and limitations
 
-### 10.1 Fix before sharing the link
-
-1. **Wrong passwords are accepted.** In `validatePassword`, `user.comparePassword(password)` returns a promise that is never awaited, so `!isValid` is never true. Add `await`.
-2. **Any logged-in user can edit any user.** `PATCH /users/:id` never compares `:id` with the logged-in user. Use `res.locals.user._id` (for example a `/users/me` route).
-3. **`GET /users/:id` needs no login** and returns a user's name and email.
-4. **`GET /groups/:id` is not limited to the organizer.** Look the group up with `organizer: userId`, as `updateGroup` does.
-
-### 10.2 Auth responses
-
-- A failed login returns `400` with plain text. It should be `401` with the standard JSON error, with the same message for an unknown email and a wrong password.
-- A successful login returns plain text. A JSON body such as `{ "message": "Login successful", "user": { ... } }` is more useful to a client.
-
-### 10.3 Validation results are discarded
-
-The `validate` middleware parses the request but never saves the parsed result. As a result, `.trim()`, `.toLowerCase()` and `z.coerce` have no effect on the data that reaches the controller. Emails are stored in their original case, so `Ada@x.com` and `ada@x.com` can both register and then fail to log in with the other form. Assign the parsed `body` back to `req.body`. (`req.query` is read-only in Express 5, so store cleaned query values in `res.locals`.)
-
-### 10.4 Member model
-
-- `group` references `"User"`; it should reference `"Group"`.
-- The schema has no `{ timestamps: true }`, and the interface has a typo (`updateAt`).
-- There is no unique index on `(group, payoutPosition)`, and `payoutPosition` is `count + 1`, so two simultaneous adds can receive the same position.
-
-### 10.5 Group deletion
-
-Only a `completed` group can be deleted, so a draft created by mistake cannot be removed. Deleting a group also leaves its members behind.
-
-### 10.6 Errors
-
-- Malformed JSON in a request body returns `500`; it should be `400`.
-- The malformed-id message always says `Invalid user ID`, even for a group id.
-- A group update on a non-draft group returns `400`; `409` fits better.
-
-### 10.7 Unauthenticated requests
-
-`requireUser` returns `403` with the text `Forbidden`. A missing or invalid login should be `401` with the standard JSON error.
-
-### 10.8 Environment
-
-`.env.example` lists only `JWT_SECRET`, but the code reads `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `ACCESS_TOKEN_TTL` and `REFRESH_TOKEN_TTL`. A missing secret defaults to an empty string and login fails with a `500`. The app should refuse to start when a required value is missing.
-
-### 10.9 Security hardening not yet done
+### 10.1 Security hardening not yet done
 
 - `cors()` allows every origin, so browser clients cannot use credentialed requests safely.
 - No security headers (`helmet`), no rate limiting, and no request body size limit.
 - An access token issued before logout works until it expires (at most 15 minutes).
 - There is no CSRF-token implementation (`sameSite=strict` covers same-site use).
-
-### 10.10 Routes to tidy
-
-- Register: `POST /api/v1/auth` → `POST /api/v1/auth/register`.
-- Add member: `POST /api/v1/members/:groupId` → `POST /api/v1/groups/:groupId/members`.
-- `GET /api/v1/auth/me` for the current user, and `/users/me` for self-service updates.
-
-### 10.11 Tests
-
-`tests/health.test.ts` expects `GET /api/v1/health` with `{ success, message }`, but the app serves `GET /health` with `{ status, uptime }`, so the test fails. There are no tests yet for auth, groups or members.
