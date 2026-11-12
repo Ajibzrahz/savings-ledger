@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AddMemberInput, UpdateMemberInput } from "./member-schema";
+import { AddMemberInput, ListMembersInput, RemoveMemberInput, ReorderMembersInput, UpdateMemberInput } from "./member-schema";
 import * as memberService from "./member-service";
 import { StatusCodes } from "http-status-codes";
 
@@ -29,11 +29,37 @@ export const updateMemberHandler = async (
   res.status(StatusCodes.CREATED).json(member);
 };
 
-export const getMemberHandler = async (req: Request, res: Response) => {
-  const member = await memberService.getMember(
-    req.params.groupId.toString(),
-    req.params.memberId.toString(),
+export const listMembersHandler = async (
+  req: Request<ListMembersInput["params"]>,
+  res: Response,
+) => {
+  const members = await memberService.listMembers(
+    req.params.groupId,
+    res.locals.user._id,
   );
+  res.status(StatusCodes.OK).json({ members });
+};
 
-  res.status(StatusCodes.OK).json(member)
+export const removeMemberHandler = async (
+  req: Request<RemoveMemberInput["params"]>,
+  res: Response,
+) => {
+  await memberService.removeMember(
+    req.params.groupId,
+    req.params.memberId,
+    res.locals.user._id,
+  );
+  res.sendStatus(StatusCodes.NO_CONTENT);
+};
+
+export const reorderMembersHandler = async (
+  req: Request<ReorderMembersInput["params"], {}, ReorderMembersInput["body"]>,
+  res: Response,
+) => {
+  const members = await memberService.reorderMembers(
+    req.params.groupId,
+    res.locals.user._id,
+    req.body.memberIds,
+  );
+  res.status(StatusCodes.OK).json({ members });
 };

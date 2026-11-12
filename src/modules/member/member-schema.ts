@@ -30,6 +30,25 @@ export const updateMemberSchema = z.object({
 
 export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
 
-export const memberIdSchema = z.object({
-  params: z.object({groupId: objectId, memberId: objectId})
-})
+export const listMembersSchema = z.object({
+  params: z.object({ groupId: objectId }),
+});
+export type ListMembersInput = z.infer<typeof listMembersSchema>;
+
+export const removeMemberSchema = z.object({
+  params: z.object({ groupId: objectId, memberId: objectId }),
+});
+export type RemoveMemberInput = z.infer<typeof removeMemberSchema>;
+
+export const reorderMembersSchema = z.object({
+  params: z.object({ groupId: objectId }),
+  body: z.strictObject({
+    memberIds: z
+      .array(objectId, { error: "memberIds must be a list of ids" })
+      .min(1, "memberIds cannot be empty")
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: "memberIds must not contain duplicates",
+      }),
+  }),
+});
+export type ReorderMembersInput = z.infer<typeof reorderMembersSchema>;
