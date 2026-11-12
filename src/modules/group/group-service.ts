@@ -1,8 +1,9 @@
 import { StatusCodes } from "http-status-codes";
-import { AppError } from "../../middleware/error-handler";
+import { AppError } from "../../common/app-error";
 import Group from "./group-model";
 import { CreateGroupInput, UpdateGroupInput } from "./group-schema";
 import { assertValidId } from "../../common/utils/assert-valid-id";
+import Member from "../member/member-model";
 
 export async function createGroup(input: CreateGroupInput, userId: string) {
   const group = await Group.create({ ...input, organizer: userId });
@@ -10,9 +11,9 @@ export async function createGroup(input: CreateGroupInput, userId: string) {
   return group;
 }
 
-export async function getGroup(id: string) {
-  assertValidId(id);
-  const group = await Group.findById(id);
+export async function getGroup(groupId: string, organizerId: string) {
+  assertValidId(groupId);
+  const group = await Group.findOne({ _id: groupId, organizer: organizerId });
   if (!group) {
     throw new AppError(StatusCodes.NOT_FOUND, "group does not exist");
   }
@@ -40,7 +41,7 @@ export async function updateGroup(
     throw new AppError(StatusCodes.NOT_FOUND, "Group not found");
   }
   throw new AppError(
-    StatusCodes.BAD_REQUEST,
+    StatusCodes.CONFLICT,
     "Only draft group can be updated",
   );
 }
@@ -48,21 +49,21 @@ export async function updateGroup(
 export async function deleteGroup(groupId: string, organizerId: string) {
   assertValidId(groupId);
 
-  const group = await Group.findOneAndDelete({
+  const deleted = await Group.findOneAndDelete({
     _id: groupId,
     organizer: organizerId,
-    status: "completed",
+    status: "draft",
   });
-  if (group) return;
 
-  const mine = await Group.findOne({ _id: groupId, organizer: organizerId });
-  if (!mine) {
-    throw new AppError(StatusCodes.NOT_FOUND, "Group not found");
+  if (deleted) {
+    await Member.deleteMany({ group: groupId });
+    return;
   }
-  throw new AppError(
-    StatusCodes.BAD_REQUEST,
-    "Only completed group can be deleted",
-  );
+
+  const mine = await Group.exists({ _id: groupId, organizer: organizerId });
+  if (!mine) throw new AppError(StatusCodes.NOT_FOUND, "Group not found");
+
+  throw new AppError(StatusCodes.CONFLICT, "Only draft groups can be deleted");
 }
 
 // export async function startGroup(groupId: string, organizerId: string) {

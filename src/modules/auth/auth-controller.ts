@@ -7,6 +7,7 @@ import { StatusCodes } from "http-status-codes";
 import { createUserSession, updateSession } from "../session/session-service";
 import { signJwt } from "../../common/utils/jwt-utils";
 import env from "../../config/env";
+import { AppError } from "../../common/app-error";
 
 export const createUserHandler = async (
   req: Request<{}, {}, createUserInput>,
@@ -24,9 +25,10 @@ export const loginHandler = async (req: Request, res: Response) => {
   const user = await validatePassword(req.body);
 
   if (!user) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .send("invalid email or password");
+    throw new AppError(
+      StatusCodes.UNAUTHORIZED,
+      "Invalid email or password",
+    );
   }
 
   const session = await createUserSession(
@@ -63,7 +65,14 @@ export const loginHandler = async (req: Request, res: Response) => {
     sameSite: "strict",
   });
 
-  return res.status(StatusCodes.OK).send("Login successful");
+  return res.status(StatusCodes.OK).json({
+    message: "Login successful",
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+    },
+  });
 };
 
 export const logoutHandler = async (req: Request, res: Response) => {

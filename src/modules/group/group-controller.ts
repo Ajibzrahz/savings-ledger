@@ -13,7 +13,10 @@ export const createGroupHandler = async (
 };
 
 export const getGroupHandler = async (req: Request, res: Response) => {
-  const group = await groupService.getGroup(String(req.params.id));
+  const group = await groupService.getGroup(
+    String(req.params.id),
+    res.locals.user._id,
+  );
   res.status(StatusCodes.OK).json({ group });
 };
 
@@ -30,6 +33,9 @@ export const updateGroupHandler = async (
 };
 
 export const deleteGroupHandler = async (req: Request, res: Response) => {
-  await groupService.deleteGroup(String(req.params.groupId), res.locals.user._id);
+  await groupService.deleteGroup(
+    String(req.params.groupId),
+    res.locals.user._id,
+  );
   res.status(StatusCodes.NO_CONTENT).json();
 };

@@ -3,8 +3,11 @@ import authRouter from "../../modules/auth/auth-route";
 import userRouter from "../../modules/user/user-route";
 import groupRouter from "../../modules/group/group-route";
 import memberRouter from "../../modules/member/member-route";
+import deserializeUser from "../../middleware/deserializeUser";
 
 const router = Router();
+
+router.use(deserializeUser);
 
 router.use("/auth", authRouter);
 router.use("/users", userRouter);

@@ -12,7 +12,7 @@ import deserializeUser from "../../middleware/deserializeUser";
 
 const router = Router();
 
-router.post("/", validate(createUserSchema), createUserHandler);
+router.post("/register", validate(createUserSchema), createUserHandler);
 router.post("/login", validate(createSessionSchema), loginHandler);
 router.delete("/logout", deserializeUser, requireUser, logoutHandler);
 

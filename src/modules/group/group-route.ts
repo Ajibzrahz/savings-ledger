@@ -9,6 +9,8 @@ import {
 } from "./group-controller";
 import { createGroupSchema, updateGroupSchema } from "./group-schema";
 import requireUser from "../../middleware/require-user";
+import { addMemberSchema } from "../member/member-schema";
+import { addMemberHandler } from "../member/member-controller";
 
 const router = Router();
 
@@ -28,4 +30,13 @@ router.patch(
   updateGroupHandler,
 );
 router.delete("/:groupId", deserializeUser, requireUser, deleteGroupHandler);
+
+//add member
+router.post(
+  "/:groupId/members",
+  deserializeUser,
+  requireUser,
+  validate(addMemberSchema),
+  addMemberHandler,
+);
 export default router;

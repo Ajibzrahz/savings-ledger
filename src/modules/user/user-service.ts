@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import userModel from "./user-model";
-import { AppError } from "../../middleware/error-handler";
+import { AppError } from "../../common/app-error";
 import { UpdateUserInput } from "./user-schema";
 import { assertValidId } from "../../common/utils/assert-valid-id";
 

@@ -1,18 +1,18 @@
 import type { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
+import { ZodError } from "zod";
 import { StatusCodes } from "http-status-codes";
 import logger from "../common/utils/logger";
+import { AppError } from "../common/app-error";
 
-// Your own errors: throw new AppError(404, "Group not found")
-export class AppError extends Error {
-  constructor(
-    public statusCode: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = "AppError";
-  }
-}
+type BodyParserError = { status: number; type: string };
+
+const isBodyParserError = (err: unknown): err is BodyParserError =>
+  typeof err === "object" &&
+  err !== null &&
+  typeof (err as { type?: unknown }).type === "string" &&
+  (err as { type: string }).type.startsWith("entity.") &&
+  typeof (err as { status?: unknown }).status === "number";
 
 type DuplicateKeyError = { code: 11000; keyValue: Record<string, unknown> };
 
@@ -30,27 +30,54 @@ const errorHandler = (
   if (res.headersSent) return next(err);
 
   let statusCode: number = StatusCodes.INTERNAL_SERVER_ERROR;
+  let code = "INTERNAL_ERROR";
   let message = "Something went wrong, try again later";
+  let details: unknown;
 
   if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
+    details = err.details;
+  } else if (err instanceof ZodError) {
+    statusCode = StatusCodes.BAD_REQUEST;
+    code = "VALIDATION_ERROR";
+    message = "Request validation failed";
+    details = err.issues.map((issue) => ({
+      field: issue.path.join("."),
+      message: issue.message,
+    }));
   } else if (err instanceof mongoose.Error.ValidationError) {
     statusCode = StatusCodes.BAD_REQUEST;
-    message = Object.values(err.errors)
-      .map((item) => item.message)
-      .join(", ");
+    code = "VALIDATION_ERROR";
+    message = "Request validation failed";
+    details = Object.values(err.errors).map((item) => ({
+      field: item.path,
+      message: item.message,
+    }));
   } else if (isDuplicateKeyError(err)) {
     statusCode = StatusCodes.CONFLICT;
-    message = `Duplicate value entered for ${Object.keys(err.keyValue).join(", ")}, please choose another value`;
+    code = "CONFLICT";
+    message = `Duplicate value for ${Object.keys(err.keyValue).join(", ")}`;
   } else if (err instanceof mongoose.Error.CastError) {
-    statusCode = StatusCodes.NOT_FOUND;
-    message = `No item found with id: ${err.value}`;
+    statusCode = StatusCodes.BAD_REQUEST;
+    code = "INVALID_ID";
+    message = `Invalid value for ${err.path}: ${err.value}`;
+  } else if (isBodyParserError(err)) {
+    const tooLarge = err.status === 413;
+    statusCode = tooLarge
+      ? StatusCodes.REQUEST_TOO_LONG
+      : StatusCodes.BAD_REQUEST;
+    code = tooLarge ? "PAYLOAD_TOO_LARGE" : "INVALID_JSON";
+    message = tooLarge
+      ? "Request body is too large"
+      : "Request body is not valid JSON";
   } else {
     logger.error(err); // only unexpected errors get logged as errors
   }
 
-  return res.status(statusCode).json({ message });
+  return res.status(statusCode).json({
+    error: { code, message, ...(details ? { details } : {}) },
+  });
 };
 
 export default errorHandler;
